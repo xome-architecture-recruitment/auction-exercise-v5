@@ -1,0 +1,25 @@
+Handle only this requirement.
+
+In the AuctionStore, before recording a bidder's maximum, checker whether a different bidder already has the exact same maximum.
+
+A bidder must NEVER be charged more than their submitted maximum.
+
+Example:
+Alice has maximum 300000.
+Bob submits maximum 300000.
+Bob's bid must be rejected.
+The existing auction state must remain unchanged.
+
+Currently currentPrice() uses:
+secondHighest + INCREMENT
+
+Change it so the calculated current price cannot exceed the leading bidder's maximum.
+
+Requirements:
+
+- Do not reeject equal maximum bids.
+- Do not change reserve, idempotency or other logic.
+
+Also point out that equal maximums still require a tie-breaking rule, but do not implement that rule yet
+
+Before editing, tell me the minimal code change you propose.
