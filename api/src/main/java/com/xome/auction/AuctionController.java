@@ -1,5 +1,6 @@
 package com.xome.auction;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -31,22 +32,48 @@ public class AuctionController {
         return Map.of("status", "ok");
     }
 
-    /**
-     * TODO: accept a bidder's maximum. Accept or reject it, and return
-     * something the UI can act on.
-     */
     @PostMapping("/bids")
-    public ResponseEntity<?> placeBid(@RequestBody BidRequest request) {
-        log.info("received bid request");
-        return ResponseEntity.status(501).body(Map.of("error", "not implemented"));
+    public ResponseEntity<Map<String, Object>> placeBid(@RequestBody BidRequest request) {
+        if (request == null || request.bidderId() == null || request.bidderId().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "accepted", false,
+                    "reason", "Bidder ID is required",
+                    "status", currentStatus()));
+        }
+
+        log.info("received bid request for bidder {} with maximum {}", request.bidderId(), request.amount());
+
+        if (request.amount() <= 0) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "accepted", false,
+                    "reason", "Bid amount must be positive",
+                    "status", currentStatus()));
+        }
+
+        if (!store.recordMaximum(request.bidderId(), request.amount())) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "accepted", false,
+                    "reason", "Another bidder already has that maximum",
+                    "status", currentStatus()));
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "accepted", true,
+                "reason", "Accepted",
+                "status", currentStatus()));
     }
 
-    /**
-     * TODO: return the current state of the auction, as a watcher is allowed
-     * to see it.
-     */
     @GetMapping("/status")
-    public ResponseEntity<?> status() {
-        return ResponseEntity.status(501).body(Map.of("error", "not implemented"));
+    public ResponseEntity<Map<String, Object>> status() {
+        return ResponseEntity.ok(currentStatus());
+    }
+
+    private Map<String, Object> currentStatus() {
+        Map<String, Object> status = new HashMap<>();
+        status.put("currentPrice", store.currentPrice());
+        status.put("leadingBidder", store.leadingBidder());
+        status.put("reserveMet", false);
+        status.put("closesAt", store.closesAt().toString());
+        return status;
     }
 }
